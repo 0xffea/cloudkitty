@@ -176,6 +176,8 @@ class CeilometerCollector(collector.BaseCollector):
             compute_data.append(self.t_cloudkitty.format_item(instance,
                                                               'instance',
                                                               1))
+        print("--- compute data")
+        print(compute_data)
         if not compute_data:
             raise collector.NoDataCollected(self.collector_name, 'compute')
         return self.t_cloudkitty.format_service('compute', compute_data)
@@ -191,6 +193,7 @@ class CeilometerCollector(collector.BaseCollector):
             image_id = image_stats.groupby['resource_id']
             if not self._cacher.has_resource_detail('image', image_id):
                 raw_resource = self._conn.resources.get(image_id)
+                print(raw_resource)
                 image = self.t_ceilometer.strip_resource_data('image',
                                                               raw_resource)
                 self._cacher.add_resource_detail('image',
@@ -201,6 +204,8 @@ class CeilometerCollector(collector.BaseCollector):
             image_data.append(self.t_cloudkitty.format_item(image,
                                                             'image',
                                                             image_stats.max))
+        print("--- image data")
+        print(image_data)
         if not image_data:
             raise collector.NoDataCollected(self.collector_name, 'image')
         return self.t_cloudkitty.format_service('image', image_data)
@@ -227,6 +232,8 @@ class CeilometerCollector(collector.BaseCollector):
             volume_data.append(self.t_cloudkitty.format_item(volume,
                                                              'GB',
                                                              volume_stats.max))
+        print("--- volume data")
+        print(volume_data)
         if not volume_data:
             raise collector.NoDataCollected(self.collector_name, 'volume')
         return self.t_cloudkitty.format_service('volume', volume_data)
@@ -317,3 +324,30 @@ class CeilometerCollector(collector.BaseCollector):
                                             'network.floating')
         return self.t_cloudkitty.format_service('network.floating',
                                                 floating_data)
+
+    def get_storage(self, start, end=None, project_id=None, q_filter=None):
+        active_storage_stats = self.resources_stats('storage.objects.size',
+                                                   start,
+                                                   end,
+                                                   project_id,
+                                                   q_filter)
+        storage_data = []
+        for storage_stats in active_storage_stats:
+            storage_id = storage_stats.groupby['resource_id']
+            if not self._cacher.has_resource_detail('storage', storage_id):
+                raw_resource = self._conn.resources.get(storage_id)
+                storage = self.t_ceilometer.strip_resource_data('storage',
+                                                                raw_resource)
+                self._cacher.add_resource_detail('storage',
+                                                 storage_id,
+                                                 storage)
+            storage = self._cacher.get_resource_detail('storage',
+                                                       storage_id)
+            storage_data.append(self.t_cloudkitty.format_item(storage,
+                                                              'storage',
+                                                              storage_stats.max))
+        print("--- storage data")
+        print(storage_data)
+        if not storage_data:
+            raise collector.NoDataCollected(self.collector_name, 'storage')
+        return self.t_cloudkitty.format_service('storage', storage_data)
